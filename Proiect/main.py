@@ -80,6 +80,19 @@ class GuessNumberServer:
         except Exception as e:
             print(f"Failed to send message to a client: {e}")
 
+    def stop_server(self):
+        """Broadcast a shutdown message, close all connections, and exit."""
+        self.broadcast("The server is shutting down. Goodbye!")
+        for c in [self.client1, self.client2]:
+            if c:
+                conn, _ = c
+                try:
+                    conn.close()
+                except Exception as e:
+                    print(f"Error closing connection: {e}")
+        self.stop_event.set()
+        self.server_socket.close()
+        exit(0)
 
 
 if __name__ == "__main__":
