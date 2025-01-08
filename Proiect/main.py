@@ -45,7 +45,110 @@ class GuessNumberServer:
             except Exception as e:
                 print(f"Error accepting connections: {e}")
 
-   
+    def handle_client1(self, conn, addr):
+        while not self.stop_event.is_set():
+            if self.wait_response_from_client1:
+                try:
+                    self.send_to(conn, "Choose an option for current game")
+                    data = conn.recv(1024)
+                    if not data:
+                        print(f"Client1 disconnected: {addr}")
+                        self.client1 = None
+                        conn.close()
+                        break
+
+                    message = data.decode().strip()
+                    self.wait_response_from_client1 = False
+                    self.received_response_from_client1 = True
+                    if message == "NO":
+                        self.broadcast("Client1 did not provide a number. A random number will be generated.")
+                        self.secret_number = None
+                    else:
+                        try:
+                            number = int(message)
+                            if 0 <= number <= 50:
+                                self.secret_number = number
+                                self.send_to(conn, f"Number {number} has been set.")
+                            else:
+                                self.send_to(conn, "The number must be within the range [0..50].")
+                        except ValueError:
+                            self.send_to(conn, "Please send a valid number.")
+
+                except ConnectionResetError:
+                    print(f"Connection lost with Client1: {addr}")
+                    self.client1 = None
+                    break
+                except Exception as e:
+                    print(f"Error handling Client1 ({addr}): {e}")
+                    self.client1 = None
+                    break
+
+    def handle_client2(self, conn, addr):
+        self.start_new_game()
+        while not self.stop_event.is_set():
+            try:
+                data = conn.recv(1024)
+                if not data:
+                    print(f"Client2 disconnected: {addr}")
+                    self.client2 = None
+                    conn.close()
+                    break
+
+                message = data.decode().strip()
+
+                if message.upper() in ["NEW GAME"]:
+                    self.broadcast("Client2 requested a NEW GAME. The maximum score remains.")
+                    self.received_response_from_client1 = False
+                    self.wait_response_from_client1 = True
+                    self.start_new_game()
+                    continue
+                elif message.upper() in ["NEW SESSION"]:
+                    self.broadcast("Client2 requested a NEW SESSION. The maximum score is reset.")
+                    self.max_score = 0
+                    self.received_response_from_client1 = False
+                    self.wait_response_from_client1 = True
+                    self.start_new_game()
+                    continue
+                elif message.upper() in ["STOP"]:
+                    self.broadcast("Client2 requested to stop. Shutting down server...")
+                    self.stop_server()
+                    break
+
+                try:
+                    guess = int(message)
+                except ValueError:
+                    self.send_to(conn,
+                                 "Please send a number (0..50) or a valid command (NEW GAME / NEW SESSION / STOP).")
+                    continue
+
+                self.attempts += 1
+
+                if guess == self.secret_number:
+                    score = self.calculate_score(self.attempts)
+                    self.broadcast(
+                        f"Client2 guessed the number {self.secret_number} in {self.attempts} attempts. Score: {score}")
+
+                    self.max_score += score
+
+                    self.broadcast(f"The current session's max score is: {self.max_score}")
+
+                    self.send_to(conn, "Choose an option: NEW GAME / NEW SESSION / STOP")
+                else:
+                    if guess < self.secret_number:
+                        response = "HIGHER"
+                    else:
+                        response = "LOWER"
+                    self.broadcast(f"Guess: {guess}. Answer: {response}")
+
+            except ConnectionResetError:
+                print(f"Connection lost with Client2: {addr}")
+                self.client2 = None
+                break
+            except Exception as e:
+                print(f"Error handling Client2 ({addr}): {e}")
+                self.client2 = None
+                break
+
     def start_new_game(self):
         self.attempts = 0
 
