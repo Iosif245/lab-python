@@ -46,6 +46,22 @@ class GuessNumberServer:
                 print(f"Error accepting connections: {e}")
 
    
+    def start_new_game(self):
+        self.attempts = 0
+
+        while not self.received_response_from_client1:
+            threading.Event().wait(1)
+
+        if self.secret_number is None:
+            self.secret_number = random.randint(0, 50)
+            self.broadcast("A random secret number (0..50) has been generated.")
+        else:
+            self.broadcast("The secret number provided by Client1 is set. The game starts now!")
+
+    def calculate_score(self, tries):
+        points = 100 - 5 * (tries - 1)
+        return max(0, points)
+
 
 if __name__ == "__main__":
     server = GuessNumberServer(HOST, PORT)
