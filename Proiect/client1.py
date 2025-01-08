@@ -16,7 +16,7 @@ class Client1GUI:
         frame = tk.Frame(self.master)
         frame.pack(padx=10, pady=10)
 
-        self.choice_var = tk.StringVar(value="DEFAULT")  
+        self.choice_var = tk.StringVar(value="DEFAULT") 
 
         tk.Label(frame, text="Do you want to provide the secret number for the next game?", anchor="w").pack(fill="x", pady=5)
 
@@ -51,10 +51,26 @@ class Client1GUI:
         self.txt_log.pack(fill="both", expand=True)
 
         self.connect_to_server()
+
+    def connect_to_server(self):
+        try:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect((HOST, PORT))
+            self.log(f"Connected to server {HOST}:{PORT}")
+
+            threading.Thread(target=self.receive_messages, daemon=True).start()
+
+        except Exception as e:
+            self.log(f"Connection error: {e}")
+            self.sock = None
+
+    def log(self, msg):
+        """Append a message to the text area."""
         self.txt_log.config(state="normal")
         self.txt_log.insert(tk.END, msg + "\n")
         self.txt_log.config(state="disabled")
         self.txt_log.see(tk.END)
+
 
 if __name__ == "__main__":
     root = tk.Tk()
