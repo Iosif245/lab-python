@@ -64,6 +64,43 @@ class Client2GUI:
 
         self.entry_input.delete(0, tk.END)
 
+    def receive_messages(self):
+        """
+        Continuously receive messages from the server and display them.
+        Handle enabling/disabling input based on game state.
+        """
+        while not self.stop_event.is_set():
+            try:
+                data = self.sock.recv(1024)
+                if not data:
+                    self.log("Connection closed by the server.")
+                    self.sock.close()
+                    self.sock = None
+                    self.disable_input()
+                    break
+                message = data.decode().strip()
+                self.log(message)
+
+                if "The game starts now!" in message or "has been generated" in message:
+                    self.game_active = True
+                    self.enable_input()
+                elif "goodbye" in message:
+                    self.disable_input()
+                    self.sock.close()
+                    self.sock = None
+                    self.stop_event.set()
+                    break
+                else:
+                    self.game_active = False
+
+            except ConnectionResetError:
+                self.log("Connection lost.")
+                self.sock = None
+                self.disable_input()
+                break
+
+        self.master.destroy()
+
     def disable_input(self):
         """Disable the input and send button."""
         self.entry_input.config(state="disabled")
