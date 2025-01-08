@@ -62,6 +62,25 @@ class GuessNumberServer:
         points = 100 - 5 * (tries - 1)
         return max(0, points)
 
+    def broadcast(self, message):
+        """Send a message to both Client1 and Client2."""
+        for client in [self.client1, self.client2]:
+            if client:
+                conn, _ = client
+                try:
+                    conn.sendall((message + "\n").encode())
+                except Exception as e:
+                    print(f"Failed to send message to {client[1]}: {e}")
+        print(message)
+
+    def send_to(self, client_conn, message):
+        """Send a message to a specific client."""
+        try:
+            client_conn.sendall((message + "\n").encode())
+        except Exception as e:
+            print(f"Failed to send message to a client: {e}")
+
+
 
 if __name__ == "__main__":
     server = GuessNumberServer(HOST, PORT)
