@@ -47,7 +47,32 @@ class Client2GUI:
             self.log(f"Connection error: {e}")
             self.sock = None
 
-   
+    def send_input(self):
+        """
+        Send the user's guess or command to the server.
+        """
+        if not self.sock:
+            self.log("No connection to the server.")
+            return
+
+        user_input = self.entry_input.get().strip().upper()
+        if user_input:
+            try:
+                self.sock.sendall(user_input.encode())
+            except Exception as e:
+                self.log(f"Error sending input: {e}")
+
+        self.entry_input.delete(0, tk.END)
+
+    def disable_input(self):
+        """Disable the input and send button."""
+        self.entry_input.config(state="disabled")
+        self.btn_send.config(state="disabled")
+
+    def enable_input(self):
+        """Enable the input and send button."""
+        self.entry_input.config(state="normal")
+        self.btn_send.config(state="normal")
 
     def log(self, msg):
         """Append a message to the text area."""
