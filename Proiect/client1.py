@@ -128,7 +128,39 @@ class Client1GUI:
         self.rb_yes.config(state="normal")
         self.rb_no.config(state="normal")
 
-    
+    def receive_messages(self):
+        """
+        Continuously receive messages from the server and display them.
+        When the server indicates the game ended, re-enable UI for the next game.
+        """
+        while not self.stop_event.is_set():
+            try:
+                data = self.sock.recv(1024)
+                if not data:
+                    self.sock.close()
+                    self.sock = None
+                    break
+                message = data.decode().strip()
+                self.log(message)
+
+                if "Choose an option for current game" in message:
+                    self.enable_input_for_new_game()
+                elif "goodbye" in message:
+                    self.sock.close()
+                    self.sock = None
+                    self.stop_event.set()
+                    break
+
+            except ConnectionResetError:
+                self.log("Connection lost.")
+                self.sock = None
+                break
+            except Exception as e:
+                self.log(f"Error receiving message: {e}")
+                self.sock = None
+                break
+
+        self.master.destroy()
 
     def log(self, msg):
         """Append a message to the text area."""
