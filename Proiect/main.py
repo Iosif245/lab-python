@@ -27,6 +27,26 @@ class GuessNumberServer:
         print(f"Server started at {host}:{port}. Waiting for clients...")
         self.accept_connections()
 
+    def accept_connections(self):
+        """Wait for two connections: Client1 and Client2."""
+        while len([c for c in [self.client1, self.client2] if c is not None]) < 2:
+            try:
+                conn, addr = self.server_socket.accept()
+
+                print(f"Client connected: {addr}")
+
+                if not self.client1:
+                    self.client1 = (conn, addr)
+                    threading.Thread(target=self.handle_client1, args=(conn, addr)).start()
+                elif not self.client2:
+                    self.client2 = (conn, addr)
+                    threading.Thread(target=self.handle_client2, args=(conn, addr)).start()
+
+            except Exception as e:
+                print(f"Error accepting connections: {e}")
+
+   
+
 if __name__ == "__main__":
     server = GuessNumberServer(HOST, PORT)
 
